@@ -1,11 +1,11 @@
-name: Update Aviation Dashboard
+name: Update TAF Dashboard
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour at the top of the hour
-  workflow_dispatch:      # Allows you to run it manually
+    - cron: '15 * * * *'
+  workflow_dispatch:
 
 jobs:
-  build:
+  update-dashboard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -14,13 +14,17 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install System Dependencies
-        run: sudo apt-get install -y libeccodes-dev
-      - name: Install Python Libraries
-        run: pip install -r requirements.txt
-      - name: Run Processing Script
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get install -y libeccodes-dev
+      - name: Install Libraries
+        run: pip install requests numpy pandas xarray cfgrib metpy
+      - name: Run Script
         run: python aviation_dashboard.py
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: . # Uploads the generated dashboard.html
-          branch: gh-pages
+      - name: Commit and Push
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add index.html history.json
+          git commit -m "Update Dashboard and History $(date -u)" || exit 0
+          git push
