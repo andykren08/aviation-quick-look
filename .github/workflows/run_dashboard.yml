@@ -18,7 +18,8 @@ jobs:
           sudo apt-get update --fix-missing
           sudo apt-get install -y libeccodes-dev
       - name: Install Libraries
-        run: pip install -r requests numpy pandas xarray cfgrib metpy requirements.txt
+        # --> THIS IS THE CHANGED LINE <--
+        run: pip install -r requirements.txt 
       - name: Run Script
         run: python aviation_dashboard.py
       - name: Commit and Push
