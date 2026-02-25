@@ -55,29 +55,29 @@ def format_visibility(vis_meters):
     else: return "1/4"
 
 def colorize_flight_rules(val):
-    if val == "NA" or val == "--": return 'background-color: white; color: black;'
+    if val == "NA" or val == "--": return ''
     try:
         f = 0.25 if val == "1/4" else 0.5 if val == "1/2" else 0.75 if val == "3/4" else float(val)
-        if f > 5: return 'background-color: white;'
+        if f > 5: return ''
         elif 3 <= f <= 5: return 'background-color: #458B00; color: white;'
         elif 1 <= f < 3: return 'background-color: #CD3333; color: white;'
         else: return 'background-color: #EE82EE; color: black;'
     except: return ''
 
 def style_ceiling_table(val):
-    if val == "NA" or val == "--": return 'background-color: white;'
+    if val == "NA" or val == "--": return ''
     try:
         h = int(val)
-        if h > 3000: return 'background-color: white;'
+        if h > 3000: return ''
         elif 1000 <= h <= 3000: return 'background-color: #458B00; color: white;'
         elif 500 <= h < 1000: return 'background-color: #CD3333; color: white;'
         else: return 'background-color: #EE82EE; color: black;'
     except: return ''
 
 def style_llws_table(val):
-    if "|" not in str(val): return 'background-color: white;'
+    if "|" not in str(val): return ''
     mag = float(val.split('|')[0])
-    if mag < 20: return 'background-color: white;'
+    if mag < 20: return ''
     elif 20 <= mag < 30: return 'background-color: #FFC125; color: black;'
     elif 30 <= mag < 40: return 'background-color: #CD5B45; color: white;'
     else: return 'background-color: #7A378B; color: white;'
