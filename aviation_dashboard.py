@@ -83,13 +83,20 @@ def style_llws_table(val):
     else: return 'background-color: #7A378B; color: white;'
 
 def download_file(url, filepath):
+    # Added a User-Agent string to bypass NOAA's bot-blocking firewall
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     try:
-        r = requests.get(url, timeout=20, stream=True)
+        r = requests.get(url, headers=headers, timeout=20, stream=True)
         if r.status_code == 200:
             with open(filepath, 'wb') as f:
                 for chunk in r.iter_content(8192): f.write(chunk)
             return True
-    except: pass
+        else:
+            print(f"Download failed for {url} - Status Code: {r.status_code}")
+    except Exception as e: 
+        print(f"Error downloading {url}: {e}")
     return False
 
 def process_bufkit(filepath, model_name, mode='cig'):
@@ -157,15 +164,36 @@ def main():
     ymd_prior = (now - timedelta(days=1)).strftime("%Y%m%d")
 
     # Cycle logic
-    gfs_s, gfs_d = ("18", ymd_prior) if curr_h < 4 else ("00", ymd_curr) if curr_h < 10 else ("06", ymd_curr) if curr_h < 16 else ("12", ymd_curr) if curr_h < 22 else ("18", ymd_curr)
+    cyc_s, cyc_d = ("18", ymd_prior) if curr_h < 4 else ("00", ymd_curr) if curr_h < 10 else ("06", ymd_curr) if curr_h < 16 else ("12", ymd_curr) if curr_h < 22 else ("18", ymd_curr)
     
-    # 1. DOWNLOAD GRIB (Example: GFS Vis)
-    print("Downloading Weather Data...")
-    for hr in [f"{i:03d}" for i in range(1, 49)]:
-        url = f"https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25_1hr.pl?dir=%2Fgfs.{gfs_d}%2F{gfs_s}%2Fatmos&file=gfs.t{gfs_s}z.pgrb2.0p25.f{hr}&var_VIS=on&lev_surface=on&subregion=&toplat=40&leftlon=278&rightlon=285&bottomlat=30"
-        download_file(url, os.path.join(DATA_DIR, f"gfs.f{hr}.grib2"))
+    # 1. DOWNLOAD GRIBs (All Models)
+    print("Downloading NOMADS GRIB Data...")
+    
+    # Define NOMADS structure: (filter_script, directory_structure, filename_structure)
+    nomads_meta = {
+        'GFS':  ('filter_gfs_0p25_1hr.pl', f'gfs.{cyc_d}/{cyc_s}/atmos', f'gfs.t{cyc_s}z.pgrb2.0p25.f{{hr}}'),
+        'NAM':  ('filter_nam.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.awphys{{hr}}.tm00.grib2'),
+        'RAP':  ('filter_rap.pl', f'rap.{cyc_d}', f'rap.t{cyc_s}z.awp130pgrbf{{hr}}.grib2'),
+        'HRRR': ('filter_hrrr_2d.pl', f'hrrr.{cyc_d}/conus', f'hrrr.t{cyc_s}z.wrfsfcf{{hr}}.grib2'),
+        'ARW':  ('filter_hiresw.pl', f'hiresw.{cyc_d}', f'hiresw.t{cyc_s}z.arw_5km.f{{hr}}.conus.grib2'),
+        'NEST': ('filter_nam.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.conusnest.hiresf{{hr}}.tm00.grib2')
+    }
+
+    base_url = "https://nomads.ncep.noaa.gov/cgi-bin/"
+    bbox = "&var_VIS=on&lev_surface=on&subregion=&toplat=40&leftlon=278&rightlon=285&bottomlat=30"
+
+    for model, (script, dir_path, file_tpl) in nomads_meta.items():
+        if model not in MODELS_VIS: continue
+        print(f"Downloading {model}...")
+        for hr in range(1, 49): # Download out to 48 hours
+            hr_str = f"{hr:03d}" if model == 'GFS' else f"{hr:02d}"
+            file_name = file_tpl.format(hr=hr_str)
+            # URL encode the directory path slashes
+            url = f"{base_url}{script}?dir=%2F{dir_path.replace('/', '%2F')}&file={file_name}{bbox}"
+            download_file(url, os.path.join(DATA_DIR, f"{model.lower()}.f{hr_str}.grib2"))
 
     # 2. DOWNLOAD BUFKIT
+    print("Downloading BUFKIT Data...")
     buf_urls = {'nam': "http://www.meteo.psu.edu/bufkit/data/latest/nam_{site}.buf", 'gfs': "http://www.meteo.psu.edu/bufkit/data/GFS/latest/gfs3_{site}.buf", 'rap': "http://www.meteo.psu.edu/bufkit/data/RAP/latest/rap_{site}.buf", 'hrrr': "https://www.meteo.psu.edu/bufkit/data/HRRR/latest/hrrr_{site}.buf", 'nest': "https://www.meteo.psu.edu/bufkit/data/NAMNEST/latest/namnest_{site}.buf", 'arw': "https://www.meteo.psu.edu/bufkit/data/HIRESW/latest/hiresw_{site}.buf"}
     for s in TAF_SITES:
         for m, u in buf_urls.items(): download_file(u.format(site=s.lower()), os.path.join(DATA_DIR, f"{m}_{s.lower()}.buf"))
@@ -183,7 +211,8 @@ def main():
             for s, co in TAF_SITES_META.items():
                 idx = find_nearest_gridpoint(ds, co['lat'], co['lon'])
                 v_dfs[s] = v_dfs[s].join(pd.DataFrame({m: [format_visibility(v) for v in ds['vis'].values[:, idx[0], idx[1]]]}, index=pd.to_datetime(ds.valid_time.values)), how='outer')
-        except: pass
+        except Exception as e: 
+            print(f"Failed to process GRIBs for {m}: {e}") # Errors now print to GitHub Actions logs!
 
     # Process Bufkit
     for s in TAF_SITES:
