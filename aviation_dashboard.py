@@ -89,7 +89,7 @@ def style_ceiling_table(val):
 
 def style_llws_table(val):
     if "|" not in str(val): return ''
-    mag = float(val.split('|')[0])
+    mag = float(val.split('kt')[0].strip())
     if mag < 20: return ''
     elif 20 <= mag < 30: return 'background-color: #FFC125; color: black;'
     elif 30 <= mag < 40: return 'background-color: #CD5B45; color: white;'
@@ -151,7 +151,7 @@ def process_bufkit(filepath, model_name, mode='cig'):
                 except: continue
             results.append(str(int(round(lowest_ft/100)*100)) if not np.isnan(lowest_ft) else "--")
         else: # LLWS
-            heights, dirs, spds = [], [], []
+            heights, dirs, spds = [], []
             for j in range(0, len(data_lines)-1, 2):
                 l1, l2 = data_lines[j], data_lines[j+1]
                 if len(l1) < 7 or len(l2) < 1: continue
@@ -173,31 +173,44 @@ def process_bufkit(filepath, model_name, mode='cig'):
 def main():
     now = datetime.now(timezone.utc)
     last_updated_str = now.strftime("%Y-%m-%d %H:%M UTC")
-    ymd_curr, curr_h = now.strftime("%Y%m%d"), now.hour
-    ymd_prior = (now - timedelta(days=1)).strftime("%Y%m%d")
+    curr_h = now.hour
 
-    # Cycle logic
-    cyc_s, cyc_d = ("18", ymd_prior) if curr_h < 4 else ("00", ymd_curr) if curr_h < 10 else ("06", ymd_curr) if curr_h < 16 else ("12", ymd_curr) if curr_h < 22 else ("18", ymd_curr)
+    # Calculate times for 6-hourly models (GFS, NAM, ARW, NEST)
+    cyc_6hr = 18 if curr_h < 4 else 0 if curr_h < 10 else 6 if curr_h < 16 else 12 if curr_h < 22 else 18
+    cyc_6_s = f"{cyc_6hr:02d}"
+    cyc_6_d = (now - timedelta(days=1)).strftime("%Y%m%d") if curr_h < 4 else now.strftime("%Y%m%d")
+
+    # Calculate times for Hourly models (HRRR, RAP) - offset by 2 hours for NOMADS latency
+    hrly_time = now - timedelta(hours=2)
+    cyc_h_s = f"{hrly_time.hour:02d}"
+    cyc_h_d = hrly_time.strftime("%Y%m%d")
     
     # 1. DOWNLOAD GRIBs (All Models)
     print("Downloading NOMADS GRIB Data...")
     
-    # Define NOMADS structure: (filter_script, directory_structure, filename_structure)
-    nomads_meta = {
-        'GFS':  ('filter_gfs_0p25_1hr.pl', f'gfs.{cyc_d}/{cyc_s}/atmos', f'gfs.t{cyc_s}z.pgrb2.0p25.f{{hr}}'),
-        'NAM':  ('filter_nam.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.awphys{{hr}}.tm00.grib2'),
-        'RAP':  ('filter_rap.pl', f'rap.{cyc_d}', f'rap.t{cyc_s}z.awp130pgrbf{{hr}}.grib2'),
-        'HRRR': ('filter_hrrr_2d.pl', f'hrrr.{cyc_d}/conus', f'hrrr.t{cyc_s}z.wrfsfcf{{hr}}.grib2'),
-        'ARW':  ('filter_hiresconus.pl', f'hiresw.{cyc_d}', f'hiresw.t{cyc_s}z.arw_5km.f{{hr}}.conus.grib2'),
-        'NEST': ('filter_nam_conusnest.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.conusnest.hiresf{{hr}}.tm00.grib2')
+    nomads_scripts = {
+        'GFS':  'filter_gfs_0p25_1hr.pl', 'NAM':  'filter_nam.pl',
+        'RAP':  'filter_rap.pl', 'HRRR': 'filter_hrrr_2d.pl',
+        'ARW':  'filter_hiresconus.pl', 'NEST': 'filter_nam_conusnest.pl'
     }
 
     base_url = "https://nomads.ncep.noaa.gov/cgi-bin/"
     bbox = "&var_VIS=on&lev_surface=on&subregion=&toplat=40&leftlon=278&rightlon=285&bottomlat=30"
 
-    for model, (script, dir_path, file_tpl) in nomads_meta.items():
+    for model, script in nomads_scripts.items():
         if model not in MODELS_VIS: continue
-        print(f"Downloading {model}...")
+        
+        # Apply the correct cycle based on the model type
+        cyc_s, cyc_d = (cyc_h_s, cyc_h_d) if model in ['HRRR', 'RAP'] else (cyc_6_s, cyc_6_d)
+        
+        if model == 'GFS': dir_path, file_tpl = f'gfs.{cyc_d}/{cyc_s}/atmos', f'gfs.t{cyc_s}z.pgrb2.0p25.f{{hr}}'
+        elif model == 'NAM': dir_path, file_tpl = f'nam.{cyc_d}', f'nam.t{cyc_s}z.awphys{{hr}}.tm00.grib2'
+        elif model == 'RAP': dir_path, file_tpl = f'rap.{cyc_d}', f'rap.t{cyc_s}z.awp130pgrbf{{hr}}.grib2'
+        elif model == 'HRRR': dir_path, file_tpl = f'hrrr.{cyc_d}/conus', f'hrrr.t{cyc_s}z.wrfsfcf{{hr}}.grib2'
+        elif model == 'ARW': dir_path, file_tpl = f'hiresw.{cyc_d}', f'hiresw.t{cyc_s}z.arw_5km.f{{hr}}.conus.grib2'
+        elif model == 'NEST': dir_path, file_tpl = f'nam.{cyc_d}', f'nam.t{cyc_s}z.conusnest.hiresf{{hr}}.tm00.grib2'
+
+        print(f"Downloading {model} (Cycle {cyc_s}Z)...")
         for hr in range(1, 49): # Download out to 48 hours
             hr_str = f"{hr:03d}" if model == 'GFS' else f"{hr:02d}"
             file_name = file_tpl.format(hr=hr_str)
@@ -245,7 +258,9 @@ def main():
         d = d[~d.index.duplicated()].sort_index(); d = d[d.index >= cur_ts].head(42)
         d.columns = [f"{c} [{model_init_strings.get(c.lower(), '??')}]" for c in d.columns]
         d.index = d.index.strftime('%d/%H'); d.index.name = "Time (UTC)"
-        st = d.style.map(colorize_flight_rules) if pt=='vis' else d.style.map(style_ceiling_table) if pt=='cig' else d.style.format(lambda v: str(v).split('|')[-1]).map(style_llws_table)
+        
+        # New format logic added here for LLWS (shows Magnitude kt | Vector)
+        st = d.style.map(colorize_flight_rules) if pt=='vis' else d.style.map(style_ceiling_table) if pt=='cig' else d.style.format(lambda v: f"{str(v).split('|')[0]}kt | {str(v).split('|')[-1]}" if '|' in str(v) else v).map(style_llws_table)
         return st.to_html(escape=False)
 
     for s in TAF_SITES:
@@ -269,12 +284,14 @@ def main():
     a {{ color: #0000ee; text-decoration: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; }}
     .active-link {{ background-color: #007acc !important; color: #ffffff !important; font-weight: bold; }}
     .main-container {{ display: flex; justify-content: center; gap: 30px; margin-top: 40px; }}
-    .vertical-run-controls {{ display: flex; flex-direction: column; gap: 10px; background-color: #f0f0f0; padding: 15px; border-radius: 8px; border: 1px solid #ccc; }}
+    .vertical-run-controls {{ display: flex; flex-direction: column; gap: 10px; background-color: #f0f0f0; padding: 15px; border-radius: 8px; border: 1px solid #ccc; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }}
     table {{ border-collapse: collapse; margin: 0 auto; background-color: white; }}
     th, td {{ border: 1px solid #999; padding: 4px 8px; text-align: center; font-size: 14px; min-width: 70px; }}
     th {{ background-color: #6495ED; color: white; }}
     body.dark-mode {{ background-color: #1e1e1e; color: #e0e0e0; }}
     body.dark-mode td, body.dark-mode .row_heading {{ border: 1px solid #555; background-color: #444; color: white; }}
+    body.dark-mode a {{ color: #66b2ff; }}
+    body.dark-mode .vertical-run-controls {{ background-color: #2d2d2d; border-color: #444; color: #e0e0e0; }}
     </style>
     <script>
     var historyData = {history_json};
@@ -293,14 +310,47 @@ def main():
         document.getElementById('ts').innerText = "Run Time: " + run.timestamp;
     }}
     function toggleTheme() {{ document.body.classList.toggle('dark-mode'); }}
+    
+    // Listen for arrow keys to toggle between runs
+    document.addEventListener('keydown', function(e) {{
+        if (e.key === 'ArrowUp') {{
+            currentRunIdx = Math.max(0, currentRunIdx - 1);
+            document.querySelectorAll('input[name="r"]')[currentRunIdx].checked = true;
+            update();
+            e.preventDefault();
+        }} else if (e.key === 'ArrowDown') {{
+            currentRunIdx = Math.min(4, currentRunIdx + 1);
+            document.querySelectorAll('input[name="r"]')[currentRunIdx].checked = true;
+            update();
+            e.preventDefault();
+        }}
+    }});
+    
     window.onload = function() {{ setSiteData(document.getElementById('def'), 'cig', 'int'); }};
     </script></head><body>
     <button style="position: absolute; top: 15px; right: 15px;" onclick="toggleTheme()">Toggle Dark Mode</button>
     <div class="main-container">
     <div style="text-align: center;">
-    <p>Ceilings: <a id="def" onclick="setSiteData(this, 'cig', 'int')">INT</a> <a onclick="setSiteData(this, 'cig', 'gso')">GSO</a> <a onclick="setSiteData(this, 'cig', 'rdu')">RDU</a> <a onclick="setSiteData(this, 'cig', 'fay')">FAY</a> <a onclick="setSiteData(this, 'cig', 'rwi')">RWI</a>
-    &nbsp;&nbsp; Vis: <a onclick="setSiteData(this, 'vis', 'int')">INT</a> <a onclick="setSiteData(this, 'vis', 'gso')">GSO</a> <a onclick="setSiteData(this, 'vis', 'rdu')">RDU</a> <a onclick="setSiteData(this, 'vis', 'fay')">FAY</a> <a onclick="setSiteData(this, 'vis', 'rwi')">RWI</a>
-    &nbsp;&nbsp; Shear: <a onclick="setSiteData(this, 'llws', 'int')">INT</a> <a onclick="setSiteData(this, 'llws', 'gso')">GSO</a> <a onclick="setSiteData(this, 'llws', 'rdu')">RDU</a> <a onclick="setSiteData(this, 'llws', 'fay')">FAY</a> <a onclick="setSiteData(this, 'llws', 'rwi')">RWI</a></p>
+    <p>
+    Ceilings: 
+    <a id="def" onmouseover="setSiteData(this, 'cig', 'int')">INT</a> 
+    <a onmouseover="setSiteData(this, 'cig', 'gso')">GSO</a> 
+    <a onmouseover="setSiteData(this, 'cig', 'rdu')">RDU</a> 
+    <a onmouseover="setSiteData(this, 'cig', 'fay')">FAY</a> 
+    <a onmouseover="setSiteData(this, 'cig', 'rwi')">RWI</a>
+    &nbsp;&nbsp; Vis: 
+    <a onmouseover="setSiteData(this, 'vis', 'int')">INT</a> 
+    <a onmouseover="setSiteData(this, 'vis', 'gso')">GSO</a> 
+    <a onmouseover="setSiteData(this, 'vis', 'rdu')">RDU</a> 
+    <a onmouseover="setSiteData(this, 'vis', 'fay')">FAY</a> 
+    <a onmouseover="setSiteData(this, 'vis', 'rwi')">RWI</a>
+    &nbsp;&nbsp; Shear: 
+    <a onmouseover="setSiteData(this, 'llws', 'int')">INT</a> 
+    <a onmouseover="setSiteData(this, 'llws', 'gso')">GSO</a> 
+    <a onmouseover="setSiteData(this, 'llws', 'rdu')">RDU</a> 
+    <a onmouseover="setSiteData(this, 'llws', 'fay')">FAY</a> 
+    <a onmouseover="setSiteData(this, 'llws', 'rwi')">RWI</a>
+    </p>
     <div style="display: flex; gap: 20px;">
     <div class="vertical-run-controls"><span>Model Run</span>
     <label><input type="radio" name="r" onclick="setRun(0)" checked> Current Run</label>
@@ -317,8 +367,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
