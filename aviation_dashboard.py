@@ -165,8 +165,18 @@ def process_bufkit(filepath, model_name, mode='cig'):
                     dr_l, dr_u = np.radians(dirs[l]), np.radians(dirs[u])
                     s = np.sqrt(max(0, spds[l]**2 + spds[u]**2 - 2*spds[l]*spds[u]*np.cos(dr_u-dr_l)))
                     if s > max_s: max_s, t_h, t_d, t_s = s, heights[u], dirs[u], spds[u]
-            if max_s >= 20: results.append(f"{int(round(max_s))}|WS{int(round(t_h))//100:03d}/{int(round(t_d/10)*10):03d}{int(round(t_s/5)*5):02d}KT")
-            else: results.append("--")
+            if max_s >= 20: 
+                # Round height to nearest 100
+                formatted_height = int(round(t_h / 100.0))
+                # Round direction to nearest 10, convert 0 to 360
+                formatted_dir = int(round(t_d / 10.0) * 10)
+                formatted_dir = 360 if formatted_dir == 0 else formatted_dir
+                # Round speed to nearest 5
+                formatted_spd = int(round(t_s / 5.0) * 5)
+    
+                results.append(f"{int(round(max_s))}|WS{formatted_height:03d}/{formatted_dir:03d}{formatted_spd:02d}KT")
+            else: 
+                results.append("--")
     return pd.Series(results, index=times, name=model_name.upper())
 
 # --- 3. Main Logic ---
@@ -425,5 +435,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
