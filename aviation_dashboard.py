@@ -62,14 +62,20 @@ def format_visibility(vis_meters):
     else: return "1/4"
 
 def colorize_flight_rules(val):
-    if val == "N/A" or val == "--": return ''
+    # Catch Pandas NaNs, string "nan", and your existing placeholders
+    if pd.isna(val) or str(val).lower() in ['nan', 'n/a', '--']: 
+        return ''
+    
     try:
         f = 0.25 if val == "1/4" else 0.5 if val == "1/2" else 0.75 if val == "3/4" else float(val)
-        if f > 5: return ''
+        
+        # Explicitly check for float('nan') just in case
+        if np.isnan(f) or f > 5: return ''
         elif 3 <= f <= 5: return 'background-color: #458B00; color: white;'
         elif 1 <= f < 3: return 'background-color: #CD3333; color: white;'
         else: return 'background-color: #EE82EE; color: black;'
-    except: return ''
+    except: 
+        return ''
 
 def style_ceiling_table(val):
     if val == "N/A" or val == "--": return ''
@@ -311,6 +317,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
