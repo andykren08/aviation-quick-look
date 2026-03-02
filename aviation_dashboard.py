@@ -43,11 +43,18 @@ def calculate_total_rh(t_c, td_c):
 def find_nearest_gridpoint(ds, target_lat, target_lon):
     lat_arr, lon_arr = ds['latitude'].values, ds['longitude'].values
     if lon_arr.max() > 180 and target_lon < 0: target_lon += 360
-    dist_sq = (lat_arr - target_lat)**2 + (lon_arr - target_lon)**2
-    return np.unravel_index(np.argmin(dist_sq, axis=None), dist_sq.shape)
+    
+    # Check if arrays are 1D (rectilinear grid) or 2D (curvilinear grid)
+    if lat_arr.ndim == 1 and lon_arr.ndim == 1:
+        lat_idx = np.abs(lat_arr - target_lat).argmin()
+        lon_idx = np.abs(lon_arr - target_lon).argmin()
+        return (lat_idx, lon_idx)
+    else:
+        dist_sq = (lat_arr - target_lat)**2 + (lon_arr - target_lon)**2
+        return np.unravel_index(np.argmin(dist_sq, axis=None), dist_sq.shape)
 
 def format_visibility(vis_meters):
-    if np.isnan(vis_meters): return "NA"
+    if np.isnan(vis_meters): return "N/A"
     vis_sm = min(vis_meters * 0.000621371, 10.0) 
     if vis_sm >= 1: return str(int(round(vis_sm)))
     elif vis_sm >= 0.75: return "3/4"
@@ -55,7 +62,7 @@ def format_visibility(vis_meters):
     else: return "1/4"
 
 def colorize_flight_rules(val):
-    if val == "NA" or val == "--": return ''
+    if val == "N/A" or val == "--": return ''
     try:
         f = 0.25 if val == "1/4" else 0.5 if val == "1/2" else 0.75 if val == "3/4" else float(val)
         if f > 5: return ''
@@ -65,7 +72,7 @@ def colorize_flight_rules(val):
     except: return ''
 
 def style_ceiling_table(val):
-    if val == "NA" or val == "--": return ''
+    if val == "N/A" or val == "--": return ''
     try:
         h = int(val)
         if h > 3000: return ''
@@ -304,6 +311,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
