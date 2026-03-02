@@ -284,14 +284,29 @@ def main():
     a {{ color: #0000ee; text-decoration: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; }}
     .active-link {{ background-color: #007acc !important; color: #ffffff !important; font-weight: bold; }}
     .main-container {{ display: flex; justify-content: center; gap: 30px; margin-top: 40px; }}
-    .vertical-run-controls {{ display: flex; flex-direction: column; gap: 10px; background-color: #f0f0f0; padding: 15px; border-radius: 8px; border: 1px solid #ccc; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }}
+    .vertical-run-controls {{ display: flex; flex-direction: column; gap: 10px; background-color: #f0f0f0; padding: 15px; border-radius: 8px; border: 1px solid #ccc; transition: background-color 0.3s, color 0.3s, border-color 0.3s; min-width: 120px; }}
     table {{ border-collapse: collapse; margin: 0 auto; background-color: white; }}
     th, td {{ border: 1px solid #999; padding: 4px 8px; text-align: center; font-size: 14px; min-width: 70px; }}
     th {{ background-color: #6495ED; color: white; }}
+    
+    /* Legend CSS */
+    .legend-container {{ background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 8px; padding: 15px; width: 320px; font-size: 13px; transition: background-color 0.3s, color 0.3s, border-color 0.3s; display: flex; flex-direction: column; }}
+    .legend-container h3 {{ text-align: center; margin: 0 0 10px 0; }}
+    .legend-grid {{ display: flex; justify-content: space-between; text-align: center; margin-bottom: 10px; }}
+    .legend-col {{ flex: 1; }}
+    .legend-col h4 {{ margin: 0 0 10px 0; font-size: 14px; }}
+    .legend-divider {{ width: 1px; background-color: #ccc; margin: 0 10px; transition: background-color 0.3s; }}
+    .legend-item {{ margin-bottom: 8px; padding: 6px; border-radius: 4px; font-weight: bold; }}
+    .info-section ul {{ padding-left: 20px; margin: 5px 0; }}
+    .info-section li {{ margin-bottom: 8px; }}
+    hr {{ border: 0; height: 1px; background: #ccc; margin: 15px 0; transition: background-color 0.3s; }}
+
+    /* Dark Mode */
     body.dark-mode {{ background-color: #1e1e1e; color: #e0e0e0; }}
     body.dark-mode td, body.dark-mode .row_heading {{ border: 1px solid #555; background-color: #444; color: white; }}
     body.dark-mode a {{ color: #66b2ff; }}
-    body.dark-mode .vertical-run-controls {{ background-color: #2d2d2d; border-color: #444; color: #e0e0e0; }}
+    body.dark-mode .vertical-run-controls, body.dark-mode .legend-container {{ background-color: #2d2d2d; border-color: #444; color: #e0e0e0; }}
+    body.dark-mode .legend-divider, body.dark-mode hr {{ background-color: #555; }}
     </style>
     <script>
     var historyData = {history_json};
@@ -311,7 +326,6 @@ def main():
     }}
     function toggleTheme() {{ document.body.classList.toggle('dark-mode'); }}
     
-    // Listen for arrow keys to toggle between runs
     document.addEventListener('keydown', function(e) {{
         if (e.key === 'ArrowUp') {{
             currentRunIdx = Math.max(0, currentRunIdx - 1);
@@ -351,15 +365,59 @@ def main():
     <a onmouseover="setSiteData(this, 'llws', 'fay')">FAY</a> 
     <a onmouseover="setSiteData(this, 'llws', 'rwi')">RWI</a>
     </p>
-    <div style="display: flex; gap: 20px;">
-    <div class="vertical-run-controls"><span>Model Run</span>
-    <label><input type="radio" name="r" onclick="setRun(0)" checked> Current Run</label>
-    <label><input type="radio" name="r" onclick="setRun(1)"> Run - 1</label>
-    <label><input type="radio" name="r" onclick="setRun(2)"> Run - 2</label>
-    <label><input type="radio" name="r" onclick="setRun(3)"> Run - 3</label>
-    <label><input type="radio" name="r" onclick="setRun(4)"> Run - 4</label></div>
-    <div id="table-container" style="min-width: 600px; overflow-x: auto;"></div>
-    </div><p id="ts" style='font-size: 12px; margin-top: 20px;'>Run Time: {last_updated_str}</p>
+    
+    <div style="display: flex; gap: 20px; align-items: flex-start; justify-content: center; text-align: left;">
+        
+        <div class="vertical-run-controls">
+            <span style="font-weight: bold; text-align: center;">Model Run</span>
+            <label><input type="radio" name="r" onclick="setRun(0)" checked> Current Run</label>
+            <label><input type="radio" name="r" onclick="setRun(1)"> Run - 1</label>
+            <label><input type="radio" name="r" onclick="setRun(2)"> Run - 2</label>
+            <label><input type="radio" name="r" onclick="setRun(3)"> Run - 3</label>
+            <label><input type="radio" name="r" onclick="setRun(4)"> Run - 4</label>
+        </div>
+        
+        <div id="table-container" style="min-width: 600px; overflow-x: auto; text-align: center;"></div>
+        
+        <div class="legend-container">
+            <h3>Legend</h3>
+            <hr style="margin-top: 0;">
+            <div class="legend-grid">
+                <div class="legend-col">
+                    <h4>Flight Cat</h4>
+                    <div class="legend-item" style="background-color: #458B00; color: white;">MVFR</div>
+                    <div class="legend-item" style="background-color: #CD3333; color: white;">IFR</div>
+                    <div class="legend-item" style="background-color: #EE82EE; color: black;">LIFR</div>
+                </div>
+                <div class="legend-divider"></div>
+                <div class="legend-col">
+                    <h4>LLWS</h4>
+                    <div class="legend-item" style="background-color: #FFC125; color: black;">Marginal</div>
+                    <div class="legend-item" style="background-color: #CD5B45; color: white;">Moderate</div>
+                    <div class="legend-item" style="background-color: #7A378B; color: white;">High</div>
+                </div>
+            </div>
+            <hr>
+            <div class="info-section">
+                <p style="text-decoration: underline; margin-bottom: 5px;"><strong>Information:</strong></p>
+                <ul>
+                    <li>Cloud ceiling is derived as lowest model layer where RH is greater than or equal to 95%.</li>
+                    <li>Visibility is derived using the model visibility variable, using the grid point value closest to each TAF site.</li>
+                    <li>Wind Shear thresholds are defined as follows:
+                        <ul>
+                            <li><strong>Marginal:</strong> Shear magnitude greater than or equal to 20 kt</li>
+                            <li><strong>Moderate:</strong> Shear magnitude greater than or equal to 30 kt</li>
+                            <li><strong>High:</strong> Shear magnitude greater than or equal to 40 kt</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p style="font-style: italic; font-size: 11px; text-align: center; margin-top: 15px;">* Note: VFR (> 3000 ft and > 5 miles) is uncolored (white).</p>
+            </div>
+        </div>
+        
+    </div>
+    
+    <p id="ts" style='font-size: 12px; margin-top: 20px; text-align: center;'>Run Time: {last_updated_str}</p>
     </div></div></body></html>
     """
     with open("index.html", "w") as f: f.write(dashboard_html)
@@ -367,3 +425,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
