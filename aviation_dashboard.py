@@ -88,12 +88,17 @@ def style_ceiling_table(val):
     except: return ''
 
 def style_llws_table(val):
-    if "|" not in str(val): return ''
-    mag = float(val.split('kt')[0].strip())
-    if mag < 20: return ''
-    elif 20 <= mag < 30: return 'background-color: #FFC125; color: black;'
-    elif 30 <= mag < 40: return 'background-color: #CD5B45; color: white;'
-    else: return 'background-color: #7A378B; color: white;'
+    if pd.isna(val) or "|" not in str(val): return ''
+    try:
+        # Split on the pipe '|' and grab the first part (the magnitude)
+        mag = float(str(val).split('|')[0].strip())
+        
+        if mag < 20: return ''
+        elif 20 <= mag < 30: return 'background-color: #FFC125; color: black;'
+        elif 30 <= mag < 40: return 'background-color: #CD5B45; color: white;'
+        else: return 'background-color: #7A378B; color: white;'
+    except:
+        return ''
 
 def download_file(url, filepath):
     # Added a User-Agent string to bypass NOAA's bot-blocking firewall
@@ -435,6 +440,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
