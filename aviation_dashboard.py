@@ -207,7 +207,9 @@ def main():
         if not files: continue
         try:
             ds = xr.open_mfdataset(files, engine='cfgrib', combine='nested', concat_dim='valid_time', coords="minimal", compat="override")
-            model_init_strings[m.lower()] = pd.to_datetime(ds.initial_time.values).strftime('%m/%d %HZ')
+            # Grab the initialization time (using 'time' instead of 'initial_time')
+            init_time_val = np.atleast_1d(ds['time'].values)[0]
+            model_init_strings[m.lower()] = pd.to_datetime(init_time_val).strftime('%m/%d %HZ')
             for s, co in TAF_SITES_META.items():
                 idx = find_nearest_gridpoint(ds, co['lat'], co['lon'])
                 v_dfs[s] = v_dfs[s].join(pd.DataFrame({m: [format_visibility(v) for v in ds['vis'].values[:, idx[0], idx[1]]]}, index=pd.to_datetime(ds.valid_time.values)), how='outer')
@@ -302,5 +304,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
