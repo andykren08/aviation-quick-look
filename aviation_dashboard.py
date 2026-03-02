@@ -151,7 +151,7 @@ def process_bufkit(filepath, model_name, mode='cig'):
                 except: continue
             results.append(str(int(round(lowest_ft/100)*100)) if not np.isnan(lowest_ft) else "--")
         else: # LLWS
-            heights, dirs, spds = [], []
+            heights, dirs, spds = [], [], []
             for j in range(0, len(data_lines)-1, 2):
                 l1, l2 = data_lines[j], data_lines[j+1]
                 if len(l1) < 7 or len(l2) < 1: continue
@@ -425,4 +425,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
