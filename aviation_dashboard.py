@@ -16,15 +16,15 @@ warnings.filterwarnings('ignore')
 
 # --- 1. Configuration ---
 TAF_SITES_META = {
-    'KRDU': {'lat': 35.8776, 'lon': -78.7874},
-    'KINT': {'lat': 36.1336, 'lon': -80.2222},
-    'KGSO': {'lat': 36.0977, 'lon': -79.9373},
-    'KFAY': {'lat': 34.9911, 'lon': -78.8803},
-    'KRWI': {'lat': 35.8564, 'lon': -77.8919}
+    'KRDU': {'lat': 35.8922, 'lon': -78.7818},
+    'KINT': {'lat': 36.1333, 'lon': -80.2247},
+    'KGSO': {'lat': 36.0975, 'lon': -79.9436},
+    'KFAY': {'lat': 34.9894, 'lon': -78.8800},
+    'KRWI': {'lat': 35.8550, 'lon': -77.8931}
 }
 TAF_SITES = list(TAF_SITES_META.keys())
 MODELS_VIS = ['GFS', 'NAM', 'RAP', 'HRRR', 'ARW', 'NEST']
-MODELS_BUFKIT = ['nam', 'gfs', 'rap', 'hrrr', 'nest', 'arw']
+MODELS_BUFKIT = ['gfs', 'nam', 'rap', 'hrrr', 'arw', 'nest']
 DATA_DIR = "visibility_data"
 HISTORY_FILE = "history.json"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -302,4 +302,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
