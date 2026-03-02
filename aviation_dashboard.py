@@ -360,6 +360,9 @@ def main():
     <button style="position: absolute; top: 15px; right: 15px;" onclick="toggleTheme()">Toggle Dark Mode</button>
     <div class="main-container">
     <div style="text-align: center;">
+    
+    <h3 id="ts" style="margin-top: 0; margin-bottom: 15px;">Run Time: {last_updated_str}</h3>
+    
     <p>
     Ceilings: 
     <a id="def" onmouseover="setSiteData(this, 'cig', 'int')">INT</a> 
@@ -386,10 +389,10 @@ def main():
         <div class="vertical-run-controls">
             <span style="font-weight: bold; text-align: center;">Model Run</span>
             <label><input type="radio" name="r" onclick="setRun(0)" checked> Current Run</label>
-            <label><input type="radio" name="r" onclick="setRun(1)"> Run - 1</label>
-            <label><input type="radio" name="r" onclick="setRun(2)"> Run - 2</label>
-            <label><input type="radio" name="r" onclick="setRun(3)"> Run - 3</label>
-            <label><input type="radio" name="r" onclick="setRun(4)"> Run - 4</label>
+            <label><input type="radio" name="r" onclick="setRun(1)"> Run - 1 (1 hr ago)</label>
+            <label><input type="radio" name="r" onclick="setRun(2)"> Run - 2 (2 hrs ago)</label>
+            <label><input type="radio" name="r" onclick="setRun(3)"> Run - 3 (3 hrs ago)</label>
+            <label><input type="radio" name="r" onclick="setRun(4)"> Run - 4 (4 hrs ago)</label>
         </div>
         
         <div id="table-container" style="min-width: 600px; overflow-x: auto; text-align: center;"></div>
@@ -432,7 +435,6 @@ def main():
         
     </div>
     
-    <p id="ts" style='font-size: 12px; margin-top: 20px; text-align: center;'>Run Time: {last_updated_str}</p>
     </div></div></body></html>
     """
     with open("index.html", "w") as f: f.write(dashboard_html)
@@ -440,6 +442,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
