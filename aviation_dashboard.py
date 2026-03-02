@@ -175,8 +175,8 @@ def main():
         'NAM':  ('filter_nam.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.awphys{{hr}}.tm00.grib2'),
         'RAP':  ('filter_rap.pl', f'rap.{cyc_d}', f'rap.t{cyc_s}z.awp130pgrbf{{hr}}.grib2'),
         'HRRR': ('filter_hrrr_2d.pl', f'hrrr.{cyc_d}/conus', f'hrrr.t{cyc_s}z.wrfsfcf{{hr}}.grib2'),
-        'ARW':  ('filter_hiresw.pl', f'hiresw.{cyc_d}', f'hiresw.t{cyc_s}z.arw_5km.f{{hr}}.conus.grib2'),
-        'NEST': ('filter_nam.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.conusnest.hiresf{{hr}}.tm00.grib2')
+        'ARW':  ('filter_hiresconus.pl', f'hiresw.{cyc_d}', f'hiresw.t{cyc_s}z.arw_5km.f{{hr}}.conus.grib2'),
+        'NEST': ('filter_nam_conusnest.pl', f'nam.{cyc_d}', f'nam.t{cyc_s}z.conusnest.hiresf{{hr}}.tm00.grib2')
     }
 
     base_url = "https://nomads.ncep.noaa.gov/cgi-bin/"
@@ -302,3 +302,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
