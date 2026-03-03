@@ -16,11 +16,11 @@ warnings.filterwarnings('ignore')
 
 # --- 1. Configuration ---
 TAF_SITES_META = {
-    'KRDU': {'lat': 35.8922, 'lon': -78.7818},
-    'KINT': {'lat': 36.1333, 'lon': -80.2247},
-    'KGSO': {'lat': 36.0975, 'lon': -79.9436},
-    'KFAY': {'lat': 34.9894, 'lon': -78.8800},
-    'KRWI': {'lat': 35.8550, 'lon': -77.8931}
+    'KILM': {'lat': 34.2670, 'lon': -77.9105},
+    'KCRE': {'lat': 33.8100, 'lon': -78.7200},
+    'KMYR': {'lat': 33.6797, 'lon': -78.9283},
+    'KLBT': {'lat': 34.6100, 'lon': -79.0600},
+    'KFLO': {'lat': 34.1854, 'lon': -79.7239}
 }
 TAF_SITES = list(TAF_SITES_META.keys())
 MODELS_VIS = ['GFS', 'NAM', 'RAP', 'HRRR', 'ARW', 'NEST']
@@ -442,6 +442,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
