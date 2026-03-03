@@ -264,7 +264,7 @@ def main():
             c_dfs[s] = c_dfs[s].join(process_bufkit(path, m, 'cig'), how='outer')
             l_dfs[s] = l_dfs[s].join(process_bufkit(path, m, 'llws'), how='outer')
 
-    # 4. DASHBOARD HTML
+# 4. DASHBOARD HTML
     cur_ts = pd.Timestamp.utcnow().tz_localize(None).replace(minute=0, second=0, microsecond=0)
     html_tbls = {}
     def to_st_html(df, pt):
@@ -279,7 +279,8 @@ def main():
         return st.to_html(escape=False)
 
     for s in TAF_SITES:
-        ss = s.lower()[1:]
+        # FIX: Removed the [1:] so it doesn't break 3-letter codes like LBT
+        ss = s.lower() 
         html_tbls[f"vis_{ss}"] = to_st_html(v_dfs[s], 'vis')
         html_tbls[f"cig_{ss}"] = to_st_html(c_dfs[s], 'cig')
         html_tbls[f"llws_{ss}"] = to_st_html(l_dfs[s], 'llws')
@@ -293,6 +294,23 @@ def main():
     with open(HISTORY_FILE, 'w') as f: json.dump(full_history, f)
 
     history_json = json.dumps(full_history)
+    
+    # --- DYNAMIC HTML GENERATION ---
+    default_site = TAF_SITES[0].lower() # Automatically sets KILM as the default
+    
+    def generate_links(param):
+        links = []
+        for i, site in enumerate(TAF_SITES):
+            site_id = site.lower()
+            id_tag = 'id="def" ' if i == 0 and param == 'cig' else ''
+            links.append(f'<a {id_tag}onmouseover="setSiteData(this, \'{param}\', \'{site_id}\')">{site}</a>')
+        return "&nbsp; ".join(links)
+
+    cig_links = generate_links('cig')
+    vis_links = generate_links('vis')
+    llws_links = generate_links('llws')
+    # -------------------------------
+
     dashboard_html = f"""
     <html><head><style>
     body {{ font-family: sans-serif; margin: 8px; background-color: #ffffff; color: #000000; transition: background-color 0.3s, color 0.3s; }}
@@ -325,7 +343,7 @@ def main():
     </style>
     <script>
     var historyData = {history_json};
-    var currentRunIdx = 0; var cParam = 'cig'; var cSite = 'int';
+    var currentRunIdx = 0; var cParam = 'cig'; var cSite = '{default_site}';
     function setRun(idx) {{ currentRunIdx = parseInt(idx); update(); }}
     function setSiteData(el, p, s) {{
         cParam = p; cSite = s;
@@ -355,7 +373,7 @@ def main():
         }}
     }});
     
-    window.onload = function() {{ setSiteData(document.getElementById('def'), 'cig', 'int'); }};
+    window.onload = function() {{ setSiteData(document.getElementById('def'), 'cig', '{default_site}'); }};
     </script></head><body>
     <button style="position: absolute; top: 15px; right: 15px;" onclick="toggleTheme()">Toggle Dark Mode</button>
     <div class="main-container">
@@ -364,24 +382,9 @@ def main():
     <h3 id="ts" style="margin-top: 0; margin-bottom: 15px;">Run Time: {last_updated_str}</h3>
     
     <p>
-    Ceilings: 
-    <a id="def" onmouseover="setSiteData(this, 'cig', 'int')">INT</a> 
-    <a onmouseover="setSiteData(this, 'cig', 'gso')">GSO</a> 
-    <a onmouseover="setSiteData(this, 'cig', 'rdu')">RDU</a> 
-    <a onmouseover="setSiteData(this, 'cig', 'fay')">FAY</a> 
-    <a onmouseover="setSiteData(this, 'cig', 'rwi')">RWI</a>
-    &nbsp;&nbsp; Vis: 
-    <a onmouseover="setSiteData(this, 'vis', 'int')">INT</a> 
-    <a onmouseover="setSiteData(this, 'vis', 'gso')">GSO</a> 
-    <a onmouseover="setSiteData(this, 'vis', 'rdu')">RDU</a> 
-    <a onmouseover="setSiteData(this, 'vis', 'fay')">FAY</a> 
-    <a onmouseover="setSiteData(this, 'vis', 'rwi')">RWI</a>
-    &nbsp;&nbsp; Shear: 
-    <a onmouseover="setSiteData(this, 'llws', 'int')">INT</a> 
-    <a onmouseover="setSiteData(this, 'llws', 'gso')">GSO</a> 
-    <a onmouseover="setSiteData(this, 'llws', 'rdu')">RDU</a> 
-    <a onmouseover="setSiteData(this, 'llws', 'fay')">FAY</a> 
-    <a onmouseover="setSiteData(this, 'llws', 'rwi')">RWI</a>
+    Ceilings: {cig_links}
+    &nbsp;&nbsp;&nbsp; Vis: {vis_links}
+    &nbsp;&nbsp;&nbsp; Shear: {llws_links}
     </p>
     
     <div style="display: flex; gap: 20px; align-items: flex-start; justify-content: center; text-align: left;">
@@ -442,6 +445,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
