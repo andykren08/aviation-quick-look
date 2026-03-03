@@ -19,7 +19,7 @@ TAF_SITES_META = {
     'KILM': {'lat': 34.2670, 'lon': -77.9105},
     'KCRE': {'lat': 33.8100, 'lon': -78.7200},
     'KMYR': {'lat': 33.6797, 'lon': -78.9283},
-    'KLBT': {'lat': 34.6100, 'lon': -79.0600},
+    'LBT': {'lat': 34.6100, 'lon': -79.0600},
     'KFLO': {'lat': 34.1854, 'lon': -79.7239}
 }
 TAF_SITES = list(TAF_SITES_META.keys())
@@ -442,6 +442,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
